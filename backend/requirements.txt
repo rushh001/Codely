@@ -1,0 +1,15 @@
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+python-multipart>=0.0.9
+tree-sitter>=0.22.0
+tree-sitter-python>=0.21.0
+tree-sitter-javascript>=0.21.0
+tree-sitter-typescript>=0.21.0
+groq>=0.9.0
+sounddevice>=0.4.6
+numpy>=1.26.0
+scipy>=1.12.0
+python-dotenv>=1.0.1
+pydantic>=2.6.0
+websockets>=12.0
+aiofiles>=23.2.1

@@ -1,0 +1,15 @@
+{
+  "name": "cluely-live-codebase-context-engine",
+  "version": "1.0.0",
+  "description": "Sub-second Live Codebase Context Engine for Meetings and Knowledge Share",
+  "scripts": {
+    "backend": "cd backend && .\\venv\\Scripts\\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload",
+    "frontend": "cd frontend && npm run dev",
+    "electron": "cd frontend && npm run electron",
+    "start": "concurrently -k -n \"backend,frontend\" -c \"green,cyan\" \"npm run backend\" \"npm run frontend\"",
+    "desktop": "concurrently -k -n \"backend,frontend,electron\" -c \"green,cyan,magenta\" \"npm run backend\" \"npm run frontend\" \"npm run electron\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
