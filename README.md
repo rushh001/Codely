@@ -59,9 +59,12 @@ Captures both audio channels concurrently:
 - **Stream 1 (Microphone / You):** Tracks your voice queries and displays answers with a `👤 YOU` badge.
 - **Stream 2 (System Audio Loopback / Colleague):** Uses Windows **WASAPI Loopback / Stereo Mix** (or macOS BlackHole / Linux PulseAudio Monitor) to capture questions spoken by teammates over your headphones or speakers, flashing cards with an **amber glowing border and `❓ COLLEAGUE` badge**.
 
-### ⚡ 3. Sub-Millisecond AST Topology Engine
-- Parses local repositories with multi-language Tree-Sitter grammars (Python, JavaScript, TypeScript, Go, Rust, etc.).
-- Indexes full class signatures, method parameters, and docstrings into a **local SQLite FTS5 database** with BM25 ranking (`< 1.2ms` lookup).
+### ⚡ 3. Sub-Millisecond AST Topology Engine & Universal Ingestion
+- **Flexible Codebase Sources:** Point Cluely to any of the following targets — it handles the rest automatically:
+  - 🌐 **Public GitHub URLs:** Enter links like `https://github.com/fastapi/fastapi` or `github.com/facebook/react`. Cluely clones or streams the repository and indexes the full AST topology in seconds.
+  - 🗜️ **`.ZIP` Archives & Explorer Paths:** Pass `.zip` files (e.g. `C:\downloads\project.zip` or virtual paths inside zipped folders); Cluely automatically extracts and indexes the codebase.
+  - 📁 **Local Directories:** Target any local codebase folder across Python, TypeScript, JavaScript, Rust, Go, C/C++, Java, etc.
+- **Tree-Sitter Multi-Language AST Parsing:** Indexes full class signatures, method parameters, and docstrings into a **local SQLite FTS5 database** with BM25 ranking (`< 1.2ms` lookup).
 - **100% Privacy:** Source code is analyzed locally on your machine and never uploaded to cloud vector databases.
 
 ### 🧠 4. Hybrid High-Speed AI Synthesis
