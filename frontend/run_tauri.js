@@ -3,13 +3,14 @@ import path from 'path';
 import fs from 'fs';
 import { spawn } from 'child_process';
 
+const isCI = Boolean(process.env.CI || process.env.GITHUB_ACTIONS);
 const cargoTargetDir = path.join(os.homedir(), '.cargo', 'cluely-target');
 const cargoBin = path.join(os.homedir(), '.cargo', 'bin');
 
 const env = { 
   ...process.env, 
   PATH: `${cargoBin}${path.delimiter}${process.env.PATH}`,
-  CARGO_TARGET_DIR: cargoTargetDir
+  ...(isCI ? {} : { CARGO_TARGET_DIR: cargoTargetDir })
 };
 
 const args = process.argv.slice(2);
@@ -26,7 +27,6 @@ const child = spawn(cmd, ['tauri', ...args], {
 child.on('exit', (code) => {
   if (code === 0 && isBuild) {
     try {
-      // Copy bundles to project root ./dist-installers/
       const projectRoot = path.resolve(import.meta.dirname || process.cwd(), '..');
       const distInstallers = path.join(projectRoot, 'dist-installers');
       
@@ -34,7 +34,10 @@ child.on('exit', (code) => {
         fs.mkdirSync(distInstallers, { recursive: true });
       }
 
-      const bundleSrcDir = path.join(cargoTargetDir, 'release', 'bundle');
+      const bundleSrcDir = isCI
+        ? path.resolve(import.meta.dirname || process.cwd(), 'src-tauri', 'target', 'release', 'bundle')
+        : path.join(cargoTargetDir, 'release', 'bundle');
+
       if (fs.existsSync(bundleSrcDir)) {
         copyRecursiveSync(bundleSrcDir, distInstallers);
         console.log('\n======================================================');

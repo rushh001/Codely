@@ -1,17 +1,22 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
+
+#[allow(unused_imports)]
+use tauri::Emitter;
 
 #[cfg(windows)]
 use windows_sys::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowTextW};
 
 /// Start background polling of the active foreground window title.
 /// When VS Code, Cursor, or an IDE is active, emits `repo-detected` event to the webview.
+#[allow(unused_variables)]
 pub fn start_window_detection(app: AppHandle) {
     let running = Arc::new(AtomicBool::new(true));
 
     std::thread::spawn(move || {
+        #[allow(unused_mut)]
         let mut last_title = String::new();
 
         while running.load(Ordering::Relaxed) {

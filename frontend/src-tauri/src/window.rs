@@ -1,7 +1,4 @@
-use tauri::{AppHandle, Manager};
-
-#[cfg(target_os = "windows")]
-use tauri::PhysicalPosition;
+use tauri::{AppHandle, Manager, PhysicalPosition};
 
 /// Position the HUD window to the right side of the primary screen on startup
 pub fn position_hud_window(app: &AppHandle) {
