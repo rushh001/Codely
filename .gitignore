@@ -28,6 +28,15 @@ wheels/
 .installed.cfg
 *.egg
 .pytest_cache/
+*.spec
+backend/build/
+backend/dist/
+
+# Rust & Tauri Build Artifacts
+target/
+src-tauri/target/
+frontend/src-tauri/target/
+**/*.rs.bk
 
 # Environment Variables & Secrets
 .env
@@ -47,6 +56,13 @@ codebase_symbols.db
 frontend/dist/
 frontend/.vite/
 .vite/
+
+# Executables & Binaries
+*.exe
+*.dll
+*.dylib
+*.so
+cluely-backend.exe
 
 # Temporary Audio Buffers & Recordings
 *.wav

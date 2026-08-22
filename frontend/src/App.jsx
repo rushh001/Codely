@@ -1,4 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Onboarding from './components/Onboarding';
+import SettingsPanel from './components/SettingsPanel';
+
+// Tauri invoke & event — safe no-op in browser dev mode
+const tauriInvoke = async (cmd, args = {}) => {
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    return await invoke(cmd, args);
+  } catch {
+    // Running in browser dev mode (not Tauri) — silently ignore
+  }
+};
+
+const tauriListen = async (event, callback) => {
+  try {
+    const { listen } = await import('@tauri-apps/api/event');
+    return await listen(event, callback);
+  } catch {
+    // Browser mode
+  }
+};
 import { 
   Mic, 
   MicOff, 
@@ -40,6 +61,9 @@ export default function App() {
   const [silenceDuration, setSilenceDuration] = useState(1.8);
   const [copiedIndex, setCopiedIndex] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [positionMode, setPositionMode] = useState('right');
+  const [showOnboarding, setShowOnboarding] = useState(() => localStorage.getItem('cluely_onboarded') !== 'true');
+  const [detectedRepoToast, setDetectedRepoToast] = useState(null);
 
   // Repository & Search State
   const [currentRepo, setCurrentRepo] = useState('');
@@ -58,6 +82,20 @@ export default function App() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const logsEndRef = useRef(null);
+
+  // Listen for Tauri active IDE window detection
+  useEffect(() => {
+    let unlisten;
+    tauriListen('repo-detected', (event) => {
+      if (event.payload && event.payload.project_hint) {
+        setDetectedRepoToast(event.payload);
+      }
+    }).then(fn => { unlisten = fn; });
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, []);
 
   // Helper to add structured pipeline logs
   const addLog = (tag, message, level = "INFO") => {
@@ -337,12 +375,16 @@ export default function App() {
     setLogs([]);
   };
 
-  // Window Opacity for Electron
+  // Window Opacity — works in both Tauri and browser dev mode
   const handleOpacityChange = (val) => {
     setOpacityVal(val);
-    if (window.electronAPI && window.electronAPI.setOpacity) {
-      window.electronAPI.setOpacity(val);
-    }
+    tauriInvoke('cmd_set_opacity', { opacity: val });
+  };
+
+  // Position Mode Switcher
+  const handleSetPositionMode = (mode) => {
+    setPositionMode(mode);
+    tauriInvoke('cmd_set_position_mode', { mode });
   };
 
   return (
@@ -395,12 +437,37 @@ export default function App() {
             <Settings size={15} />
           </button>
 
-          {/* Electron Window Controls */}
+          {/* Position Mode Presets */}
+          <div className="position-mode-group">
+            <button 
+              className={`mode-chip ${positionMode === 'right' ? 'active' : ''}`}
+              onClick={() => handleSetPositionMode('right')}
+              title="Dock to Right Screen Edge"
+            >
+              DOCK
+            </button>
+            <button 
+              className={`mode-chip ${positionMode === 'compact' ? 'active' : ''}`}
+              onClick={() => handleSetPositionMode('compact')}
+              title="Compact Floating Card"
+            >
+              MINI
+            </button>
+            <button 
+              className={`mode-chip ${positionMode === 'bottom' ? 'active' : ''}`}
+              onClick={() => handleSetPositionMode('bottom')}
+              title="Bottom Strip Bar"
+            >
+              STRIP
+            </button>
+          </div>
+
+          {/* Window Controls */}
           <div className="window-controls">
-            <button className="win-btn" onClick={() => window.electronAPI?.minimize()}>
+            <button className="win-btn" onClick={() => tauriInvoke('cmd_minimize_window')}>
               <Minimize2 size={11} />
             </button>
-            <button className="win-btn close" onClick={() => window.electronAPI?.close()}>
+            <button className="win-btn close" onClick={() => tauriInvoke('cmd_close_window')}>
               <X size={11} />
             </button>
           </div>
@@ -508,11 +575,15 @@ export default function App() {
             ) : (
               resultsList.map((res, idx) => {
                 const sym = res.best_symbol;
+                const isColleague = res.speaker === 'colleague';
                 return (
-                  <div key={idx} className="context-card">
+                  <div key={idx} className={`context-card ${isColleague ? 'colleague-question' : 'user-speech'}`}>
                     {/* Header info */}
                     <div className="card-top">
                       <div className="symbol-info">
+                        <span className={`speaker-source-badge ${isColleague ? 'colleague' : 'you'}`}>
+                          {isColleague ? '❓ COLLEAGUE' : '👤 YOU'}
+                        </span>
                         <span className={`symbol-type-badge ${sym?.symbol_type || 'concept'}`}>
                           {sym?.symbol_type?.toUpperCase() || 'CONCEPT'}
                         </span>
@@ -541,9 +612,9 @@ export default function App() {
                         </div>
                       )}
                       {res.speech_text && (
-                        <div className="spoken-trigger-pill">
+                        <div className={`spoken-trigger-pill ${isColleague ? 'colleague' : 'you'}`}>
                           <Volume2 size={11} />
-                          <span>Triggered by: "{res.speech_text}"</span>
+                          <span>{isColleague ? 'Heard in meeting:' : 'Triggered by:'} "{res.speech_text}"</span>
                         </div>
                       )}
                     </div>
@@ -682,102 +753,58 @@ export default function App() {
         )}
       </div>
 
-      {/* Settings Modal Drawer */}
-      {isSettingsOpen && (
-        <div className="settings-drawer">
-          <div className="settings-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Sliders size={18} color="#00f2fe" />
-              <h3 style={{ fontSize: '15px', fontWeight: 800 }}>ENGINE CONFIGURATION</h3>
-            </div>
-            <button className="icon-btn" onClick={() => setIsSettingsOpen(false)}>
-              <X size={16} />
-            </button>
+      {/* Extracted Settings Panel Modal */}
+      <SettingsPanel
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        apiBase={API_BASE}
+        currentRepo={currentRepo || repoPathInput}
+        onScanRepo={(path, stats) => {
+          setCurrentRepo(path);
+          if (stats) setDbStats(stats);
+        }}
+        opacityVal={opacityVal}
+        onOpacityChange={handleOpacityChange}
+        silenceDuration={silenceDuration}
+        onSilenceDurationChange={handleSilenceChange}
+      />
+
+      {/* First-Run Setup Wizard */}
+      {showOnboarding && (
+        <Onboarding
+          apiBase={API_BASE}
+          onComplete={() => {
+            localStorage.setItem('cluely_onboarded', 'true');
+            setShowOnboarding(false);
+          }}
+          onScanRepo={(path, stats) => {
+            setCurrentRepo(path);
+            if (stats) setDbStats(stats);
+          }}
+        />
+      )}
+
+      {/* Auto-Detected Repo Toast */}
+      {detectedRepoToast && (
+        <div className="detected-repo-toast">
+          <FolderGit2 size={15} color="#00f2fe" />
+          <div className="toast-content">
+            <span className="toast-title">Active IDE Detected: <strong>{detectedRepoToast.project_hint}</strong></span>
+            <span className="toast-sub">{detectedRepoToast.window_title}</span>
           </div>
-
-          <div className="settings-body">
-            {/* Voice Pause Window Slider */}
-            <div className="form-group">
-              <label className="form-label">
-                <Volume2 size={14} color="#00f2fe" />
-                <span>Voice Pause Threshold: <strong>{silenceDuration} seconds</strong></span>
-              </label>
-              <input
-                type="range"
-                min="1.0"
-                max="3.5"
-                step="0.1"
-                value={silenceDuration}
-                onChange={(e) => handleSilenceChange(parseFloat(e.target.value))}
-                style={{ accentColor: '#00f2fe', width: '100%' }}
-              />
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                Higher duration allows longer pauses between phrases without cutting you off.
-              </span>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span>Groq API Key (Whisper Large-v3 + Qwen 3.6-27B)</span>
-                {groqConfigured ? (
-                  <span style={{ color: '#00f5a0', fontSize: '11px', fontWeight: 700 }}>✓ Configured in .env</span>
-                ) : (
-                  <span style={{ color: '#f59e0b', fontSize: '11px', fontWeight: 700 }}>Required</span>
-                )}
-              </label>
-              <input
-                type="password"
-                className="form-input"
-                placeholder="gsk_..."
-                value={apiKeyInput}
-                onChange={(e) => setApiKeyInput(e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <FolderGit2 size={14} />
-                <span>Target Repository Root Path</span>
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="C:/Users/name/Projects/my-repo"
-                value={repoPathInput}
-                onChange={(e) => setRepoPathInput(e.target.value)}
-              />
-              <button 
-                className="primary-btn" 
-                style={{ marginTop: '6px' }}
-                onClick={handleIndexRepo}
-                disabled={isProcessing}
-              >
-                <Layers size={15} />
-                <span>{isProcessing ? "SCANNING & INDEXING AST..." : "SCAN & INDEX CODEBASE"}</span>
-              </button>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span>Window Transparency: {Math.round(opacityVal * 100)}%</span>
-              </label>
-              <input
-                type="range"
-                min="0.3"
-                max="1.0"
-                step="0.05"
-                value={opacityVal}
-                onChange={(e) => handleOpacityChange(parseFloat(e.target.value))}
-                style={{ accentColor: '#00f2fe', width: '100%' }}
-              />
-            </div>
-
-            <div style={{ marginTop: 'auto', display: 'flex', gap: '10px' }}>
-              <button className="primary-btn" style={{ flex: 1 }} onClick={handleSaveConfig}>
-                SAVE SETTINGS
-              </button>
-            </div>
-          </div>
+          <button 
+            className="toast-action-btn"
+            onClick={() => {
+              setRepoPathInput(detectedRepoToast.project_hint);
+              setIsSettingsOpen(true);
+              setDetectedRepoToast(null);
+            }}
+          >
+            Configure
+          </button>
+          <button className="toast-close-btn" onClick={() => setDetectedRepoToast(null)}>
+            <X size={12} />
+          </button>
         </div>
       )}
     </div>

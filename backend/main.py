@@ -11,7 +11,8 @@ from pydantic import BaseModel
 from database import CodebaseDB
 from indexer import CodebaseIndexer
 from groq_service import GroqEngine
-from audio_service import AudioCaptureService
+from audio_service import DualAudioCaptureService
+from audio_loopback import list_audio_devices
 
 app = FastAPI(title="Cluely Live Codebase Context Engine API", version="1.0.0")
 
@@ -27,7 +28,7 @@ app.add_middleware(
 db = CodebaseDB()
 indexer = CodebaseIndexer(db)
 groq_engine = GroqEngine()
-audio_service = AudioCaptureService(silence_duration=1.8, energy_threshold=0.016)
+audio_service = DualAudioCaptureService(silence_duration=1.8, energy_threshold=0.016)
 
 current_repo_path: Optional[str] = None
 
@@ -97,50 +98,54 @@ def is_hallucinated_or_empty(text: str) -> bool:
     return False
 
 
-def handle_speech_audio_chunk(wav_bytes: bytes):
+def handle_speech_audio_chunk(wav_bytes: bytes, speaker: str = "you"):
     """
-    Called asynchronously when local microphone detects a completed voice utterance.
+    Called asynchronously when local microphone or system audio detects a completed voice utterance.
+    speaker: 'you' (microphone) or 'colleague' (meeting speaker loopback)
     """
     t_start = time.time()
-    send_log_sync("VAD", f"Voice utterance captured ({len(wav_bytes)/1024:.1f} KB). Processing...", "DEBUG")
+    source_tag = "YOU" if speaker == "you" else "COLLEAGUE"
+    send_log_sync("VAD", f"[{source_tag}] Voice utterance captured ({len(wav_bytes)/1024:.1f} KB). Processing...", "DEBUG")
 
     trans_res = groq_engine.transcribe_audio_bytes(wav_bytes)
     text = trans_res.get("text", "")
     stt_latency = trans_res.get("latency_ms", 0)
 
     if is_hallucinated_or_empty(text):
-        send_log_sync("VAD", f"Ignored ambient noise / silence artifact (\"{text}\")", "DEBUG")
+        send_log_sync("VAD", f"[{source_tag}] Ignored silence artifact (\"{text}\")", "DEBUG")
         return
 
-    send_log_sync("STT", f"Transcribed in {stt_latency}ms: \"{text}\"", "SUCCESS")
+    send_log_sync("STT", f"[{source_tag}] Transcribed in {stt_latency}ms: \"{text}\"", "SUCCESS")
 
-    # Broadcast live transcription event
+    # Broadcast live transcription event with speaker identity
     asyncio.run_coroutine_threadsafe(
         manager.broadcast({
             "type": "transcription",
             "text": text,
+            "speaker": speaker,
             "latency_ms": stt_latency
         }),
         loop
     )
 
     # Process code context retrieval
-    send_log_sync("INTENT", "Analyzing full sentence intent & searching AST...", "INFO")
+    send_log_sync("INTENT", f"[{source_tag}] Analyzing sentence intent & searching AST...", "INFO")
     retrieval_res = groq_engine.process_query_and_retrieve(text, db)
     total_latency = (time.time() - t_start) * 1000
 
     best_sym = retrieval_res.get("best_symbol")
     if best_sym:
-        send_log_sync("MATCH", f"AST Match: {best_sym['name']} in {best_sym['relative_path']}:{best_sym['start_line']} (Total: {total_latency:.1f}ms)", "SUCCESS")
+        send_log_sync("MATCH", f"[{source_tag}] AST Match: {best_sym['name']} in {best_sym['relative_path']}:{best_sym['start_line']} (Total: {total_latency:.1f}ms)", "SUCCESS")
     else:
-        send_log_sync("MATCH", f"Context generated (Total: {total_latency:.1f}ms)", "INFO")
+        send_log_sync("MATCH", f"[{source_tag}] Context generated (Total: {total_latency:.1f}ms)", "INFO")
 
-    # Broadcast context result event
+    # Broadcast context result event with speaker identity
     asyncio.run_coroutine_threadsafe(
         manager.broadcast({
             "type": "context_result",
             "data": {
                 **retrieval_res,
+                "speaker": speaker,
                 "transcription_latency_ms": stt_latency,
                 "e2e_latency_ms": round(total_latency, 1)
             }
@@ -177,11 +182,19 @@ def get_status():
     return {
         "status": "ready",
         "groq_configured": groq_engine.is_configured(),
-        "is_listening": audio_service.is_recording,
+        "is_listening": audio_service.is_listening,
         "silence_duration": audio_service.silence_duration,
         "energy_threshold": audio_service.energy_threshold,
         "current_repo": current_repo_path,
         "database_stats": summary
+    }
+
+
+@app.get("/api/audio/devices")
+def get_audio_devices():
+    return {
+        "success": True,
+        "devices": list_audio_devices()
     }
 
 
@@ -333,7 +346,7 @@ async def websocket_endpoint(websocket: WebSocket):
         await websocket.send_json({
             "type": "init",
             "groq_configured": groq_engine.is_configured(),
-            "is_listening": audio_service.is_recording,
+            "is_listening": audio_service.is_listening,
             "silence_duration": audio_service.silence_duration,
             "energy_threshold": audio_service.energy_threshold,
             "current_repo": current_repo_path,

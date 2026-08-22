@@ -1,22 +1,30 @@
 {
-  "name": "cluely-live-context-engine",
+  "name": "cluely",
   "private": true,
   "version": "1.0.0",
-  "main": "electron/main.cjs",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "tauri": "node run_tauri.js",
+    "tauri:dev": "node run_tauri.js dev",
+    "tauri:build": "node run_tauri.js build",
     "electron": "wait-on http://localhost:5173 && electron .",
     "dev:all": "concurrently -k -n \"vite,electron\" -c \"cyan,magenta\" \"vite\" \"npm run electron\""
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-global-shortcut": "^2.3.2",
+    "@tauri-apps/plugin-shell": "^2.3.5",
+    "@tauri-apps/plugin-store": "^2.4.4",
     "lucide-react": "^1.33.0",
     "prismjs": "^1.30.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^10.0.5",
     "cross-env": "^10.1.0",
