@@ -38,6 +38,7 @@ fn main() {
             window::cmd_close_window,
             window::cmd_toggle_click_through,
             window::cmd_set_position_mode,
+            window::cmd_set_stealth_mode,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Cluely");

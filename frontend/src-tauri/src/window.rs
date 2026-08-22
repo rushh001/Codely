@@ -1,4 +1,23 @@
-use tauri::{AppHandle, Manager, PhysicalPosition};
+use tauri::{AppHandle, Manager, PhysicalPosition, WebviewWindow};
+
+#[cfg(target_os = "windows")]
+use windows_sys::Win32::UI::WindowsAndMessaging::SetWindowDisplayAffinity;
+
+/// Applies OS-level screen capture invisibility (Stealth Mode).
+/// Excludes the HUD from Zoom, Microsoft Teams, Google Meet, OBS, and screenshot capture.
+pub fn apply_stealth_mode(window: &WebviewWindow, enabled: bool) {
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(hwnd) = window.hwnd() {
+            // WDA_EXCLUDEFROMCAPTURE = 0x00000011 (Windows 10 2004+)
+            // WDA_NONE = 0x00000000
+            let affinity: u32 = if enabled { 0x00000011 } else { 0x00000000 };
+            unsafe {
+                SetWindowDisplayAffinity(hwnd.0 as _, affinity);
+            }
+        }
+    }
+}
 
 /// Position the HUD window to the right side of the primary screen on startup
 pub fn position_hud_window(app: &AppHandle) {
@@ -15,8 +34,19 @@ pub fn position_hud_window(app: &AppHandle) {
                 ));
             }
         }
-        // Set always-on-top at screen-saver level so it floats above Zoom/Teams
+        // Set always-on-top so it floats above Zoom/Teams
         let _ = window.set_always_on_top(true);
+
+        // Enable screen capture invisibility by default
+        apply_stealth_mode(&window, true);
+    }
+}
+
+/// IPC: Toggle screen-capture invisibility ("Stealth Mode")
+#[tauri::command]
+pub fn cmd_set_stealth_mode(app: AppHandle, enabled: bool) {
+    if let Some(window) = app.get_webview_window("main") {
+        apply_stealth_mode(&window, enabled);
     }
 }
 
@@ -25,8 +55,7 @@ pub fn position_hud_window(app: &AppHandle) {
 pub fn cmd_set_opacity(app: AppHandle, opacity: f64) {
     if let Some(window) = app.get_webview_window("main") {
         let clamped = opacity.clamp(0.1, 1.0);
-        let _ = window.set_effects(None); // clear any existing
-        // Opacity is set via the window config; use set_ignore_cursor_events for click-through instead
+        let _ = window.set_effects(None);
         let _ = window.set_ignore_cursor_events(clamped < 0.3);
     }
 }

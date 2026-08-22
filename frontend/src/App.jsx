@@ -44,7 +44,8 @@ import {
   Sparkles,
   Info,
   Clock,
-  Trash2
+  Trash2,
+  Shield
 } from 'lucide-react';
 
 const API_BASE = "http://127.0.0.1:8000";
@@ -64,6 +65,7 @@ export default function App() {
   const [positionMode, setPositionMode] = useState('right');
   const [showOnboarding, setShowOnboarding] = useState(() => localStorage.getItem('cluely_onboarded') !== 'true');
   const [detectedRepoToast, setDetectedRepoToast] = useState(null);
+  const [stealthMode, setStealthMode] = useState(true);
 
   // Repository & Search State
   const [currentRepo, setCurrentRepo] = useState('');
@@ -403,6 +405,14 @@ export default function App() {
     tauriInvoke('cmd_set_position_mode', { mode });
   };
 
+  // Toggle Screen-Share Invisibility (Stealth Mode)
+  const handleToggleStealth = () => {
+    const next = !stealthMode;
+    setStealthMode(next);
+    tauriInvoke('cmd_set_stealth_mode', { enabled: next });
+    addLog("SECURITY", `Screen Capture Invisibility: ${next ? "ACTIVE (Hidden from Zoom/Teams)" : "DISABLED"}`, next ? "SUCCESS" : "WARN");
+  };
+
   return (
     <div className="hud-container" style={{ opacity: opacityVal }}>
       {/* Top Cyberpunk Header Bar */}
@@ -437,6 +447,16 @@ export default function App() {
             <span className="pill-dot"></span>
             <span>QWEN-3.6 / WHISPER</span>
           </div>
+
+          {/* Stealth Mode Indicator Button */}
+          <button 
+            className={`stealth-badge-btn ${stealthMode ? 'active' : ''}`}
+            onClick={handleToggleStealth}
+            title={stealthMode ? "Stealth Mode Active: Window is INVISIBLE to Zoom, Teams & screen recordings" : "Stealth Mode Disabled: Window is visible during screen sharing"}
+          >
+            <Shield size={12} color={stealthMode ? "#00f5a0" : "#94a3b8"} />
+            <span>STEALTH: {stealthMode ? 'ON' : 'OFF'}</span>
+          </button>
 
           {/* Toggle Logs Button */}
           <button 
@@ -783,6 +803,8 @@ export default function App() {
         onOpacityChange={handleOpacityChange}
         silenceDuration={silenceDuration}
         onSilenceDurationChange={handleSilenceChange}
+        stealthMode={stealthMode}
+        onToggleStealth={handleToggleStealth}
       />
 
       {/* First-Run Setup Wizard */}

@@ -270,6 +270,69 @@ html, body, #root {
   box-shadow: 0 0 8px rgba(0, 242, 254, 0.25);
 }
 
+.stealth-badge-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: 0.4px;
+  transition: all 0.2s ease;
+}
+
+.stealth-badge-btn:hover {
+  background: rgba(0, 245, 160, 0.08);
+  color: #ffffff;
+}
+
+.stealth-badge-btn.active {
+  background: rgba(0, 245, 160, 0.15);
+  border-color: rgba(0, 245, 160, 0.4);
+  color: #00f5a0;
+  box-shadow: 0 0 10px rgba(0, 245, 160, 0.25);
+}
+
+.stealth-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stealth-toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.btn-stealth-switch {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-stealth-switch.active {
+  background: rgba(0, 245, 160, 0.2);
+  border-color: rgba(0, 245, 160, 0.5);
+  color: #00f5a0;
+  box-shadow: 0 0 12px rgba(0, 245, 160, 0.3);
+}
+
 .window-controls {
   display: flex;
   align-items: center;

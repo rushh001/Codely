@@ -10,7 +10,8 @@ import {
   Sparkles, 
   Check, 
   Radio,
-  Cpu
+  Cpu,
+  Shield
 } from 'lucide-react';
 
 export default function SettingsPanel({ 
@@ -22,7 +23,9 @@ export default function SettingsPanel({
   opacityVal,
   onOpacityChange,
   silenceDuration,
-  onSilenceDurationChange
+  onSilenceDurationChange,
+  stealthMode,
+  onToggleStealth
 }) {
   const [groqKey, setGroqKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
@@ -201,7 +204,32 @@ export default function SettingsPanel({
             </div>
           </div>
 
-          {/* Section 4: Overlay Appearance */}
+          {/* Section 4: Overlay Appearance & Stealth */}
+          <div className="settings-section">
+            <div className="section-title">
+              <Shield size={14} color="#00f5a0" />
+              <span>Screen Capture Invisibility (Stealth Mode)</span>
+            </div>
+
+            <div className="form-row">
+              <div className="stealth-toggle-row">
+                <div className="stealth-toggle-info">
+                  <label>Hide Window from Screen Sharing: <strong>{stealthMode ? "ENABLED" : "DISABLED"}</strong></label>
+                  <span className="form-hint">
+                    When enabled, Cluely is visible on your screen but 100% invisible to Zoom, Teams, Google Meet, and screen recorders.
+                  </span>
+                </div>
+                <button 
+                  className={`btn-stealth-switch ${stealthMode ? 'active' : ''}`}
+                  onClick={onToggleStealth}
+                >
+                  {stealthMode ? "STEALTH ON" : "STEALTH OFF"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 5: Overlay Appearance */}
           <div className="settings-section">
             <div className="section-title">
               <Sliders size={14} color="#d8b4fe" />
