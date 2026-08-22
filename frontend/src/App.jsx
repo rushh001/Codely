@@ -138,7 +138,15 @@ export default function App() {
           } else if (msg.type === 'context_result') {
             setIsProcessing(false);
             if (msg.data) {
-              setResultsList(prev => [msg.data, ...prev.slice(0, 15)]);
+              setResultsList(prev => {
+                if (prev.length > 0) {
+                  const latest = prev[0];
+                  if (latest.speech_text === msg.data.speech_text && latest.best_symbol?.name === msg.data.best_symbol?.name) {
+                    return [msg.data, ...prev.slice(1)];
+                  }
+                }
+                return [msg.data, ...prev.slice(0, 15)];
+              });
               if (msg.data.speech_text) setLiveTranscript(msg.data.speech_text);
               if (msg.data.e2e_latency_ms) setLastLatency(msg.data.e2e_latency_ms);
               const sym = msg.data.best_symbol;
@@ -294,7 +302,15 @@ export default function App() {
       const data = await res.json();
       setIsProcessing(false);
       if (data.success) {
-        setResultsList(prev => [data.result, ...prev.slice(0, 15)]);
+        setResultsList(prev => {
+          if (prev.length > 0) {
+            const latest = prev[0];
+            if (latest.speech_text === data.result?.speech_text && latest.best_symbol?.name === data.result?.best_symbol?.name) {
+              return [data.result, ...prev.slice(1)];
+            }
+          }
+          return [data.result, ...prev.slice(0, 15)];
+        });
         if (data.result?.e2e_latency_ms) setLastLatency(data.result.e2e_latency_ms);
       }
     } catch (err) {

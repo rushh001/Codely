@@ -90,6 +90,48 @@ def parse_llm_json(raw_text: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def deduplicate_and_enrich_bullets(bullet1: str, bullet2: str, best_sym: Optional[Dict[str, Any]] = None) -> List[str]:
+    """
+    Guarantees that bullet1 and bullet2 are distinct, non-repetitive, and informative.
+    If the LLM repeats bullet1 in bullet2, replaces bullet2 with concrete AST code facts.
+    """
+    b1 = (bullet1 or "").strip()
+    b2 = (bullet2 or "").strip()
+
+    if not b1 and not b2:
+        return []
+    if not b1:
+        return [b2]
+    if not b2:
+        return [b1]
+
+    is_repetitive = False
+    if b1 == b2 or b1 in b2 or b2 in b1:
+        is_repetitive = True
+    else:
+        words1 = set(re.findall(r'\b[a-zA-Z0-9_]{3,}\b', b1.lower())) - STOP_WORDS
+        words2 = set(re.findall(r'\b[a-zA-Z0-9_]{3,}\b', b2.lower())) - STOP_WORDS
+        if words1 and words2:
+            overlap = len(words1 & words2)
+            similarity = overlap / min(len(words1), len(words2))
+            if similarity >= 0.60:
+                is_repetitive = True
+
+    if is_repetitive:
+        if best_sym:
+            if best_sym.get("docstring"):
+                doc_first_line = best_sym["docstring"].strip().split("\n")[0].strip()
+                b2 = f"**Implementation Detail**: `{best_sym.get('name')}` ({best_sym.get('symbol_type')}) — {doc_first_line} in `{best_sym.get('relative_path')}:{best_sym.get('start_line')}`"
+            elif best_sym.get("signature"):
+                b2 = f"**Signature & Entry Point**: `{best_sym.get('signature')}` in `{best_sym.get('relative_path')}:{best_sym.get('start_line')}`"
+            else:
+                return [b1]
+        else:
+            return [b1]
+
+    return [b1, b2]
+
+
 class GroqEngine:
     def __init__(self, api_key: Optional[str] = None):
         load_dotenv(override=True)
@@ -326,22 +368,24 @@ Retrieved Codebase Evidence (AST Symbols, Full Signatures, Docstrings & Code Sni
 {json.dumps(symbols_summary, indent=2)}
 
 Directives:
-1. Answer the developer's question DIRECTLY and COMPREHENSIVELY using the code evidence:
-   - When asked for a LIST/INVENTORY (e.g. guardrails, metrics, attacks, models, options):
-     * "bullet1": DIRECTLY name and list ALL relevant items/classes/functions found in the code with markdown backticks and source paths.
-     * "bullet2": Explain their execution/registration flow (citing the primary function/class with signature).
-     * Set "selected_symbol_id" to the primary orchestrator, base class, or entry point.
-   - When asked about a SPECIFIC function/endpoint:
-     * "bullet1": State its exact location (file:line) and purpose.
-     * "bullet2": Detail signature, parameters, return type, and operational logic.
-     * Set "selected_symbol_id" to that exact symbol.
+1. Answer the developer's question DIRECTLY and COMPREHENSIVELY using the retrieved code evidence:
+   - "bullet1" (The Direct Answer & Concrete Entity Inventory):
+     * Directly answer the developer's question. If asked for a list or options (metrics, guardrails, models, configs, handlers, endpoints), list EVERY specific class, function, or attribute found in the code with markdown backticks (e.g. `MetricClass`, `evaluate()`) and source paths.
+   - "bullet2" (The Operational Architecture & Mechanics):
+     * Explain HOW these components function together (execution flow, parameters, transformations, pipelines, helper functions, or caller methods).
+     * DO NOT repeat the list or names already provided in bullet1. Provide distinct, actionable technical mechanics.
+   - Set "selected_symbol_id" to the primary orchestrator, base class, or entry point.
+
+2. CRITICAL ANTI-REPETITION CONSTRAINT:
+   - "bullet1" and "bullet2" must contain COMPLETELY DIFFERENT, non-overlapping information.
+   - NEVER repeat the same sentences, file summaries, or phrases in both bullets.
 
 Return ONLY valid JSON:
 {{
   "selected_symbol_id": <id number from retrieved list>,
   "intent_summary": "<1-sentence summary of developer's technical goal>",
-  "bullet1": "<First high-density bullet directly answering query>",
-  "bullet2": "<Second high-density bullet with technical implementation details>"
+  "bullet1": "<First high-density bullet directly answering query with concrete items>",
+  "bullet2": "<Second high-density bullet with operational mechanics - DO NOT REPEAT bullet1>"
 }}
 """
             # Provider 1: Google Gemini Flash (Expanded 1M token budget)
@@ -354,9 +398,7 @@ Return ONLY valid JSON:
                 matched = next((s for s in candidate_symbols if s["id"] == selected_id), None)
                 if matched:
                     best_symbol = matched
-                bullets.append(gemini_res["bullet1"])
-                if gemini_res.get("bullet2"):
-                    bullets.append(gemini_res["bullet2"])
+                bullets = deduplicate_and_enrich_bullets(gemini_res.get("bullet1"), gemini_res.get("bullet2"), best_symbol)
 
             # Provider 2: Groq Fallback Models
             elif self.client:
@@ -365,7 +407,7 @@ Return ONLY valid JSON:
                     try:
                         synth_comp = self.client.chat.completions.create(
                             messages=[
-                                {"role": "system", "content": "You are a senior codebase architect AI. Always answer questions directly with concrete code elements. Respond ONLY with a valid JSON object."},
+                                {"role": "system", "content": "You are a senior codebase architect AI. Always answer questions directly with concrete code elements. Never repeat content between bullet1 and bullet2. Respond ONLY with a valid JSON object."},
                                 {"role": "user", "content": synth_prompt}
                             ],
                             model=model_name,
@@ -382,9 +424,7 @@ Return ONLY valid JSON:
                             if matched:
                                 best_symbol = matched
 
-                            bullets.append(final_res["bullet1"])
-                            if final_res.get("bullet2"):
-                                bullets.append(final_res["bullet2"])
+                            bullets = deduplicate_and_enrich_bullets(final_res.get("bullet1"), final_res.get("bullet2"), best_symbol)
                             break
                     except Exception as e:
                         print(f"[Synthesis error on {model_name}]: {e}")
