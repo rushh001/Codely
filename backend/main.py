@@ -231,15 +231,15 @@ def update_audio_settings(req: AudioSettingsRequest):
 @app.post("/api/index")
 def index_repo(req: IndexRequest):
     global current_repo_path
-    path = req.repo_path.strip()
-    if not os.path.exists(path):
-        return {"success": False, "error": f"Path {path} does not exist"}
+    raw_path = req.repo_path.strip().strip('"').strip("'").strip()
+    if not raw_path:
+        return {"success": False, "error": "Target repository path or GitHub URL cannot be empty"}
 
-    send_log_sync("INDEX", f"Starting AST scan & Macro Topology build on: {path}", "INFO")
+    send_log_sync("INDEX", f"Starting AST scan & Macro Topology build on: {raw_path}", "INFO")
     t0 = time.time()
     try:
-        summary = indexer.index_directory(path)
-        current_repo_path = path
+        summary = indexer.index_directory(raw_path)
+        current_repo_path = summary.get("resolved_path", raw_path)
         elapsed = time.time() - t0
         send_log_sync("INDEX", f"Indexed {summary['total_symbols']} symbols across {summary['total_files']} files ({summary['topology_modules']} subsystems) in {elapsed:.2f}s", "SUCCESS")
         
@@ -251,7 +251,7 @@ def index_repo(req: IndexRequest):
             }),
             loop
         )
-        return {"success": True, "stats": summary}
+        return {"success": True, "stats": summary, "current_repo": current_repo_path}
     except Exception as e:
         send_log_sync("INDEX", f"Indexing failed: {str(e)}", "ERROR")
         return {"success": False, "error": str(e)}

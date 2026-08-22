@@ -11,7 +11,8 @@ import {
   Check, 
   Radio,
   Cpu,
-  Shield
+  Shield,
+  AlertCircle
 } from 'lucide-react';
 
 export default function SettingsPanel({ 
@@ -33,6 +34,7 @@ export default function SettingsPanel({
   const [audioDevices, setAudioDevices] = useState([]);
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
+  const [scanError, setScanError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
@@ -75,6 +77,8 @@ export default function SettingsPanel({
   const handleScan = async () => {
     if (!repoPath) return;
     setIsScanning(true);
+    setScanError(null);
+    setScanResult(null);
     try {
       const res = await fetch(`${apiBase}/api/index`, {
         method: 'POST',
@@ -84,10 +88,14 @@ export default function SettingsPanel({
       const data = await res.json();
       if (data.success) {
         setScanResult(data.stats);
-        if (onScanRepo) onScanRepo(repoPath, data.stats);
+        const resolved = data.current_repo || data.stats?.resolved_path || repoPath;
+        setRepoPath(resolved);
+        if (onScanRepo) onScanRepo(resolved, data.stats);
+      } else {
+        setScanError(data.error || "Indexing failed. Please check the path.");
       }
     } catch (e) {
-      console.error(e);
+      setScanError(`Connection error: ${e.message}`);
     } finally {
       setIsScanning(false);
     }
@@ -126,7 +134,7 @@ export default function SettingsPanel({
             </div>
 
             <div className="form-row">
-              <label>Groq API Key (High-Speed Whisper Voice Transcription)</label>
+              <label>Groq API Key (Whisper STT & Fast Fallback)</label>
               <input 
                 type="password" 
                 placeholder="gsk_... (Saved in backend/.env)"
@@ -144,13 +152,13 @@ export default function SettingsPanel({
             </div>
 
             <div className="form-row">
-              <label>Local Repository Path</label>
+              <label>Local Path, .ZIP File, or Public GitHub URL</label>
               <div className="input-btn-group">
                 <input 
                   type="text" 
                   value={repoPath}
                   onChange={e => setRepoPath(e.target.value)}
-                  placeholder="C:\path\to\codebase"
+                  placeholder="e.g. C:\project, project.zip, or https://github.com/owner/repo"
                 />
                 <button 
                   className="btn-primary" 
@@ -160,7 +168,17 @@ export default function SettingsPanel({
                   {isScanning ? <Sparkles size={13} className="spin" /> : "RE-SCAN"}
                 </button>
               </div>
+              <span className="form-hint">
+                Supports local directories, extracted or archived .zip files, and public GitHub repository links.
+              </span>
             </div>
+
+            {scanError && (
+              <div className="scan-error-pill">
+                <AlertCircle size={13} color="#ef4444" />
+                <span>{scanError}</span>
+              </div>
+            )}
 
             {scanResult && (
               <div className="scan-success-pill">

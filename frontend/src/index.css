@@ -1704,6 +1704,34 @@ html, body, #root {
   margin-right: auto;
 }
 
+.scan-success-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 245, 160, 0.1);
+  border: 1px solid rgba(0, 245, 160, 0.3);
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: #00f5a0;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.scan-error-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: #fca5a5;
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 6px;
+}
+
 /* ========================================================
    ACTIVE IDE REPO DETECTED TOAST
    ======================================================== */
