@@ -8,6 +8,7 @@
 
 [![Tauri v2](https://img.shields.io/badge/Tauri-v2%20(Rust)-FFC131?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app/)
 [![React 19](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![Stealth Mode](https://img.shields.io/badge/Stealth%20Mode-Invisible%20to%20Zoom-00F5A0?style=for-the-badge)](https://github.com/rushh001/Cluley-Code-Context-Engine)
 [![Gemini 3.5](https://img.shields.io/badge/Gemini-3.5%20Flash%20Lite-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
 [![Groq Whisper](https://img.shields.io/badge/Groq-Whisper%20Large%20v3-F55036?style=for-the-badge&logo=groq&logoColor=white)](https://groq.com/)
 [![SQLite FTS5](https://img.shields.io/badge/SQLite-FTS5%20BM25-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org/)
@@ -47,23 +48,29 @@ It floats seamlessly above **Zoom, Microsoft Teams, Google Meet, and VS Code**, 
 
 ## ✨ Key Features
 
-### 🎙️ 1. Two-Way Meeting Audio (Dual Stream Loopback)
+### 🛡️ 1. Screen Capture Invisibility ("Stealth Mode")
+- **100% Invisible on Screen Share:** Powered by the native Windows Desktop Window Manager API (`SetWindowDisplayAffinity(hwnd, 0x11)` / `WDA_EXCLUDEFROMCAPTURE`).
+- **How it works:** Cluely renders normally onto your physical monitor, but is **completely removed from video call captures, recordings, and screenshots** in **Zoom, Microsoft Teams, Google Meet, Discord, and OBS** — even during **Entire Screen (Full Desktop)** sharing!
+- **Zero Artifacts:** Meeting participants see clean code editor windows or your desktop background without any black boxes or clipping.
+- **Toggle Anytime:** Easily toggle on/off with the **`🛡️ STEALTH: ON`** button in the HUD header or Settings drawer.
+
+### 🎙️ 2. Two-Way Meeting Audio (Dual Stream Loopback)
 Captures both audio channels concurrently:
 - **Stream 1 (Microphone / You):** Tracks your voice queries and displays answers with a `👤 YOU` badge.
 - **Stream 2 (System Audio Loopback / Colleague):** Uses Windows **WASAPI Loopback / Stereo Mix** (or macOS BlackHole / Linux PulseAudio Monitor) to capture questions spoken by teammates over your headphones or speakers, flashing cards with an **amber glowing border and `❓ COLLEAGUE` badge**.
 
-### ⚡ 2. Sub-Millisecond AST Topology Engine
+### ⚡ 3. Sub-Millisecond AST Topology Engine
 - Parses local repositories with multi-language Tree-Sitter grammars (Python, JavaScript, TypeScript, Go, Rust, etc.).
 - Indexes full class signatures, method parameters, and docstrings into a **local SQLite FTS5 database** with BM25 ranking (`< 1.2ms` lookup).
 - **100% Privacy:** Source code is analyzed locally on your machine and never uploaded to cloud vector databases.
 
-### 🧠 3. Hybrid High-Speed AI Synthesis
+### 🧠 4. Hybrid High-Speed AI Synthesis
 - **Whisper Large-v3 (via Groq):** Sub-200ms voice transcription.
 - **Google Gemini 3.5 Flash Lite:** 1M token context reasoning engine that analyzes the retrieved code symbols and produces two strictly decoupled bullets:
   - **Bullet 1 (Entity Inventory):** Concrete list of matching classes, functions, and file paths with backticks.
   - **Bullet 2 (Operational Mechanics):** Internal logic flow, invocation contracts, retry rules, and parameter signatures.
 
-### 🖥️ 4. Native Desktop HUD Controls
+### 🖥️ 5. Native Desktop HUD Controls
 - **Global Toggle Hotkey:** Press **`Ctrl + Shift + Space`** (Windows/Linux) or **`Cmd + Shift + Space`** (macOS) to instantly hide or show the HUD overlay from anywhere.
 - **Position Modes:** 
   - **`DOCK`** (Right screen edge — default meeting HUD)
