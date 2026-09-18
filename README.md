@@ -1,8 +1,8 @@
-# ⚡ Codely • Universal Desktop Overlay Context Engine
-
 <div align="center">
 
-![Codely Banner](https://raw.githubusercontent.com/rushh001/Codely/main/frontend/src-tauri/icons/128x128@2x.png)
+<img src="logo.png" alt="Codely Logo" width="130" height="130" style="border-radius: 26px;" />
+
+# ⚡ Codely • Universal Desktop Overlay Context Engine
 
 ### **Zero-Latency Live Codebase HUD for Technical Meetings, Standups & Architecture Reviews**
 
