@@ -14,18 +14,29 @@ import {
 
 export default function Onboarding({ onComplete, onScanRepo, apiBase = "http://127.0.0.1:8000" }) {
   const [step, setStep] = useState(1);
-  const [groqKey, setGroqKey] = useState('');
+  const [activeProvider, setActiveProvider] = useState('gemini');
   const [geminiKey, setGeminiKey] = useState('');
+  const [openaiKey, setOpenaiKey] = useState('');
+  const [anthropicKey, setAnthropicKey] = useState('');
+  const [groqKey, setGroqKey] = useState('');
   const [repoPath, setRepoPath] = useState('C:\\Users\\mohdz\\Valiqor\\backend');
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
 
   const handleSaveKeys = async () => {
     try {
+      const payload = {
+        active_provider: activeProvider
+      };
+      if (geminiKey.trim()) payload.gemini_api_key = geminiKey.trim();
+      if (openaiKey.trim()) payload.openai_api_key = openaiKey.trim();
+      if (anthropicKey.trim()) payload.anthropic_api_key = anthropicKey.trim();
+      if (groqKey.trim()) payload.groq_api_key = groqKey.trim();
+
       await fetch(`${apiBase}/api/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groq_api_key: groqKey })
+        body: JSON.stringify(payload)
       });
       setStep(2);
     } catch {
@@ -77,20 +88,76 @@ export default function Onboarding({ onComplete, onScanRepo, apiBase = "http://1
           <div className="onboarding-step">
             <div className="step-badge">STEP 1 OF 5</div>
             <h3>Configure AI Intelligence</h3>
-            <p>Cluely combines Whisper voice transcription with ultra-fast Gemini Flash reasoning.</p>
-            
-            <div className="input-group">
-              <label>Google Gemini API Key (Primary Reasoner — 1M Tokens/min)</label>
-              <input 
-                type="password" 
-                placeholder="AIzaSy... or AQ.Ab8RN6..." 
-                value={geminiKey}
-                onChange={e => setGeminiKey(e.target.value)}
-              />
-            </div>
+            <p>Choose your preferred AI Reasoning Engine and configure API credentials.</p>
 
             <div className="input-group">
-              <label>Groq API Key (Fast Whisper Voice Transcription)</label>
+              <label>Select Reasoning Engine (User Choice)</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', margin: '4px 0 10px 0' }}>
+                {[
+                  { id: 'gemini', label: 'Google Gemini' },
+                  { id: 'openai', label: 'OpenAI' },
+                  { id: 'anthropic', label: 'Anthropic Claude' }
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setActiveProvider(item.id)}
+                    style={{
+                      padding: '6px 4px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      border: activeProvider === item.id ? '1px solid #00f2fe' : '1px solid rgba(255, 255, 255, 0.1)',
+                      background: activeProvider === item.id ? 'rgba(0, 242, 254, 0.15)' : 'rgba(0, 0, 0, 0.3)',
+                      color: activeProvider === item.id ? '#00f2fe' : '#94a3b8',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {activeProvider === 'gemini' && (
+              <div className="input-group">
+                <label>Google Gemini API Key (1M Token Reasoning)</label>
+                <input 
+                  type="password" 
+                  placeholder="AIzaSy... (Gemini 2.5 Flash)" 
+                  value={geminiKey}
+                  onChange={e => setGeminiKey(e.target.value)}
+                />
+              </div>
+            )}
+
+            {activeProvider === 'openai' && (
+              <div className="input-group">
+                <label>OpenAI API Key (GPT-4o, o3-mini)</label>
+                <input 
+                  type="password" 
+                  placeholder="sk-proj-..." 
+                  value={openaiKey}
+                  onChange={e => setOpenaiKey(e.target.value)}
+                />
+              </div>
+            )}
+
+            {activeProvider === 'anthropic' && (
+              <div className="input-group">
+                <label>Anthropic Claude API Key (Claude 3.5 Haiku / Sonnet)</label>
+                <input 
+                  type="password" 
+                  placeholder="sk-ant-..." 
+                  value={anthropicKey}
+                  onChange={e => setAnthropicKey(e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="input-group">
+              <label>Groq API Key (Powers Whisper Voice STT &lt;200ms)</label>
               <input 
                 type="password" 
                 placeholder="gsk_..." 

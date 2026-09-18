@@ -56,6 +56,8 @@ export default function App() {
   const [isListening, setIsListening] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
   const [groqConfigured, setGroqConfigured] = useState(false);
+  const [activeProvider, setActiveProvider] = useState('gemini');
+  const [activeModel, setActiveModel] = useState('gemini-3.5-flash');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showLogs, setShowLogs] = useState(true);
   const [opacityVal, setOpacityVal] = useState(0.95);
@@ -66,6 +68,17 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(() => localStorage.getItem('cluely_onboarded') !== 'true');
   const [detectedRepoToast, setDetectedRepoToast] = useState(null);
   const [stealthMode, setStealthMode] = useState(true);
+  const [theme, setTheme] = useState(() => localStorage.getItem('cluely_theme') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.body.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const handleThemeChange = (newTheme) => {
+    setTheme(newTheme);
+    localStorage.setItem('cluely_theme', newTheme);
+  };
 
   // Repository & Search State
   const [currentRepo, setCurrentRepo] = useState('');
@@ -133,6 +146,8 @@ export default function App() {
             setCurrentRepo(msg.current_repo || '');
             if (msg.silence_duration) setSilenceDuration(msg.silence_duration);
             if (msg.database_stats) setDbStats(msg.database_stats);
+            if (msg.active_provider) setActiveProvider(msg.active_provider);
+            if (msg.active_model) setActiveModel(msg.active_model);
             addLog("INIT", `Database ready: ${msg.database_stats?.total_symbols || 0} symbols indexed`, "INFO");
           } else if (msg.type === 'transcription') {
             setLiveTranscript(msg.text);
@@ -197,6 +212,8 @@ export default function App() {
       const data = await res.json();
       setGroqConfigured(data.groq_configured);
       setIsListening(data.is_listening);
+      if (data.active_provider) setActiveProvider(data.active_provider);
+      if (data.active_model) setActiveModel(data.active_model);
       if (data.silence_duration) setSilenceDuration(data.silence_duration);
       if (data.current_repo) {
         setCurrentRepo(data.current_repo);
@@ -402,6 +419,9 @@ export default function App() {
   // Position Mode Switcher
   const handleSetPositionMode = (mode) => {
     setPositionMode(mode);
+    if (mode === 'compact' || mode === 'bottom') {
+      setShowLogs(false);
+    }
     tauriInvoke('cmd_set_position_mode', { mode });
   };
 
@@ -414,96 +434,93 @@ export default function App() {
   };
 
   return (
-    <div className="hud-container" style={{ opacity: opacityVal }}>
-      {/* Top Cyberpunk Header Bar */}
+    <div className={`hud-container mode-${positionMode} theme-${theme}`} data-theme={theme} style={{ opacity: opacityVal }}>
+      {/* Sleek, Modern Non-Slop HUD Navbar */}
       <header className="hud-header">
-        <div className="hud-brand">
-          <div className="brand-badge">
-            <span className="badge-pulse"></span>
-            CLUELY LIVE HUD
-          </div>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-            Codebase Context Engine
-          </span>
+        <div className="hud-brand" onClick={() => handleSetPositionMode('right')} title="Cluely HUD">
+          <span className="brand-dot"></span>
+          <span className="brand-title">CLUELY</span>
         </div>
 
-        <div className="hud-status-bar">
-          {/* Latency Telemetry */}
+        {/* Central Non-Slop Indicators (Auto-hidden in MINI mode) */}
+        <div className="hud-indicators">
+          <span className="hud-indicator" title="AST Symbols in Database">
+            <Layers size={11} color="#00f2fe" />
+            <span>{dbStats.total_symbols} symbols</span>
+          </span>
+          <span 
+            className="hud-indicator clickable" 
+            title={`Active Reasoner: ${activeProvider.toUpperCase()} (${activeModel}). Click to switch.`}
+            onClick={() => setIsSettingsOpen(true)}
+          >
+            <Sparkles size={11} color="#38bdf8" />
+            <span>{activeModel.replace(/-latest$/, '').replace(/^gemini-/, '').toUpperCase()}</span>
+          </span>
           {lastLatency !== null && (
-            <div className="latency-badge" title="End-to-End AST Retrieval Latency">
+            <span className="hud-indicator" title="End-to-End Latency">
               <Zap size={11} color="#00f5a0" />
               <span>{lastLatency}ms</span>
-            </div>
+            </span>
           )}
+        </div>
 
-          {/* Codebase Index Badge */}
-          <div className="index-counter-badge" title="Symbols in SQLite FTS Index">
-            <Layers size={11} color="#00f2fe" />
-            <span>{dbStats.total_symbols} AST SYMBOLS</span>
-          </div>
-
-          {/* Model Status */}
-          <div className="status-pill active">
-            <span className="pill-dot"></span>
-            <span>QWEN-3.6 / WHISPER</span>
-          </div>
-
-          {/* Stealth Mode Indicator Button */}
-          <button 
-            className={`stealth-badge-btn ${stealthMode ? 'active' : ''}`}
-            onClick={handleToggleStealth}
-            title={stealthMode ? "Stealth Mode Active: Window is INVISIBLE to Zoom, Teams & screen recordings" : "Stealth Mode Disabled: Window is visible during screen sharing"}
-          >
-            <Shield size={12} color={stealthMode ? "#00f5a0" : "#94a3b8"} />
-            <span>STEALTH: {stealthMode ? 'ON' : 'OFF'}</span>
-          </button>
-
-          {/* Toggle Logs Button */}
-          <button 
-            className={`btn-ghost ${showLogs ? 'active' : ''}`}
-            onClick={() => setShowLogs(!showLogs)}
-            title="Toggle Live Telemetry Logs Dock"
-          >
-            <Terminal size={14} />
-            <span>LOGS</span>
-          </button>
-
-          {/* Settings Button */}
-          <button className="icon-btn" title="Engine Settings" onClick={() => setIsSettingsOpen(true)}>
-            <Settings size={15} />
-          </button>
-
-          {/* Position Mode Presets */}
+        {/* Right Actions & Mode Controls */}
+        <div className="hud-actions">
+          {/* Position Switcher: DOCK / MINI / STRIP */}
           <div className="position-mode-group">
             <button 
               className={`mode-chip ${positionMode === 'right' ? 'active' : ''}`}
               onClick={() => handleSetPositionMode('right')}
-              title="Dock to Right Screen Edge"
+              title="Dock Window (Full Right Sidebar)"
             >
               DOCK
             </button>
             <button 
               className={`mode-chip ${positionMode === 'compact' ? 'active' : ''}`}
               onClick={() => handleSetPositionMode('compact')}
-              title="Compact Floating Card"
+              title="Mini Window (Floating Card)"
             >
               MINI
             </button>
             <button 
               className={`mode-chip ${positionMode === 'bottom' ? 'active' : ''}`}
               onClick={() => handleSetPositionMode('bottom')}
-              title="Bottom Strip Bar"
+              title="Strip Window (Bottom Ticker)"
             >
               STRIP
             </button>
           </div>
 
+          {/* Stealth Mode Indicator */}
+          <button 
+            className={`nav-btn-stealth ${stealthMode ? 'active' : ''}`}
+            onClick={handleToggleStealth}
+            title={stealthMode ? "Stealth ON: Window is invisible to Zoom & Teams" : "Stealth OFF: Window is visible"}
+          >
+            <Shield size={12} />
+            <span className="btn-label-text">{stealthMode ? 'STEALTH' : 'STEALTH OFF'}</span>
+          </button>
+
+          {/* Logs Toggle Button */}
+          <button 
+            className={`icon-btn ${showLogs ? 'active' : ''}`}
+            onClick={() => setShowLogs(!showLogs)}
+            title="Toggle Pipeline Logs"
+          >
+            <Terminal size={13} />
+          </button>
+
+          {/* Settings Button */}
+          <button className="icon-btn" title="Preferences" onClick={() => setIsSettingsOpen(true)}>
+            <Settings size={13} />
+          </button>
+
           {/* Window Controls */}
           <div className="window-controls">
-            <button className="win-btn" onClick={() => tauriInvoke('cmd_minimize_window')}>
+            <button className="win-btn" onClick={() => tauriInvoke('cmd_minimize_window')} title="Minimize">
               <Minimize2 size={11} />
             </button>
-            <button className="win-btn close" onClick={() => tauriInvoke('cmd_close_window')}>
+            <button className="win-btn close" onClick={() => tauriInvoke('cmd_close_window')} title="Close">
               <X size={11} />
             </button>
           </div>
@@ -805,6 +822,13 @@ export default function App() {
         onSilenceDurationChange={handleSilenceChange}
         stealthMode={stealthMode}
         onToggleStealth={handleToggleStealth}
+        theme={theme}
+        onThemeChange={handleThemeChange}
+        onProviderChange={(prov, model) => {
+          setActiveProvider(prov);
+          setActiveModel(model);
+          addLog("CONFIG", `Active reasoning provider switched to ${prov.toUpperCase()} (${model})`, "SUCCESS");
+        }}
       />
 
       {/* First-Run Setup Wizard */}

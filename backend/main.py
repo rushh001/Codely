@@ -4,6 +4,7 @@ import time
 import json
 import asyncio
 from typing import Optional, Dict, Any, List
+from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -157,9 +158,48 @@ def handle_speech_audio_chunk(wav_bytes: bytes, speaker: str = "you"):
 audio_service.set_on_speech_callback(handle_speech_audio_chunk)
 
 
+def save_env_variables(vars_dict: Dict[str, str]):
+    try:
+        env_path = Path(__file__).parent / ".env"
+        existing_lines = []
+        if env_path.exists():
+            with open(env_path, "r", encoding="utf-8") as f:
+                existing_lines = f.readlines()
+                
+        updated_keys = set()
+        new_lines = []
+        for line in existing_lines:
+            line_stripped = line.strip()
+            matched = False
+            for k, v in vars_dict.items():
+                if v is None:
+                    continue
+                if line_stripped.startswith(f"{k}=") or line_stripped.startswith(f"#{k}="):
+                    new_lines.append(f"{k}={v}\n")
+                    updated_keys.add(k)
+                    matched = True
+                    break
+            if not matched:
+                new_lines.append(line)
+                
+        for k, v in vars_dict.items():
+            if v and k not in updated_keys:
+                new_lines.append(f"{k}={v}\n")
+                
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.writelines(new_lines)
+    except Exception as e:
+        print(f"[Warning] Failed to update .env: {e}")
+
+
 # Request schemas
 class ConfigRequest(BaseModel):
     groq_api_key: Optional[str] = None
+    gemini_api_key: Optional[str] = None
+    openai_api_key: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
+    active_provider: Optional[str] = None
+    active_model: Optional[str] = None
     repo_path: Optional[str] = None
 
 
@@ -176,9 +216,18 @@ class QueryRequest(BaseModel):
     query: str
 
 
+@app.get("/api/providers")
+def get_providers():
+    return {
+        "success": True,
+        **groq_engine.get_providers_state()
+    }
+
+
 @app.get("/api/status")
 def get_status():
     summary = db.get_indexed_summary()
+    prov_state = groq_engine.get_providers_state()
     return {
         "status": "ready",
         "groq_configured": groq_engine.is_configured(),
@@ -186,7 +235,10 @@ def get_status():
         "silence_duration": audio_service.silence_duration,
         "energy_threshold": audio_service.energy_threshold,
         "current_repo": current_repo_path,
-        "database_stats": summary
+        "database_stats": summary,
+        "active_provider": prov_state["active_provider"],
+        "active_model": prov_state["active_model"],
+        "providers_state": prov_state
     }
 
 
@@ -201,16 +253,45 @@ def get_audio_devices():
 @app.post("/api/config")
 def update_config(config: ConfigRequest):
     global current_repo_path
+    
+    groq_engine.set_provider_config(
+        active_provider=config.active_provider,
+        active_model=config.active_model,
+        gemini_api_key=config.gemini_api_key,
+        openai_api_key=config.openai_api_key,
+        anthropic_api_key=config.anthropic_api_key,
+        groq_api_key=config.groq_api_key
+    )
+
+    env_updates = {}
     if config.groq_api_key is not None:
-        groq_engine.set_api_key(config.groq_api_key)
-        send_log_sync("CONFIG", "Groq API key updated successfully", "SUCCESS")
+        env_updates["GROQ_API_KEY"] = config.groq_api_key
+    if config.gemini_api_key is not None:
+        env_updates["GEMINI_API_KEY"] = config.gemini_api_key
+    if config.openai_api_key is not None:
+        env_updates["OPENAI_API_KEY"] = config.openai_api_key
+    if config.anthropic_api_key is not None:
+        env_updates["ANTHROPIC_API_KEY"] = config.anthropic_api_key
+    if config.active_provider is not None:
+        env_updates["ACTIVE_AI_PROVIDER"] = config.active_provider
+    if config.active_model is not None:
+        env_updates["ACTIVE_AI_MODEL"] = config.active_model
+
+    if env_updates:
+        save_env_variables(env_updates)
+
     if config.repo_path is not None:
         current_repo_path = config.repo_path
         send_log_sync("CONFIG", f"Target repository path set to: {current_repo_path}", "INFO")
+
+    prov_state = groq_engine.get_providers_state()
+    send_log_sync("CONFIG", f"AI Provider set to {prov_state['active_provider'].upper()} ({prov_state['active_model']})", "SUCCESS")
+
     return {
         "success": True,
-        "groq_configured": groq_engine.is_configured(),
-        "current_repo": current_repo_path
+        "is_configured": groq_engine.is_configured(),
+        "current_repo": current_repo_path,
+        "providers_state": prov_state
     }
 
 
@@ -343,6 +424,7 @@ async def websocket_endpoint(websocket: WebSocket):
     send_log_sync("WS", "Client connected to real-time telemetry stream", "INFO")
     try:
         summary = db.get_indexed_summary()
+        prov_state = groq_engine.get_providers_state()
         await websocket.send_json({
             "type": "init",
             "groq_configured": groq_engine.is_configured(),
@@ -350,7 +432,10 @@ async def websocket_endpoint(websocket: WebSocket):
             "silence_duration": audio_service.silence_duration,
             "energy_threshold": audio_service.energy_threshold,
             "current_repo": current_repo_path,
-            "database_stats": summary
+            "database_stats": summary,
+            "active_provider": prov_state["active_provider"],
+            "active_model": prov_state["active_model"],
+            "providers_state": prov_state
         })
 
         while True:
