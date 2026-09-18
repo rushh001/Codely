@@ -41,5 +41,5 @@ fn main() {
             window::cmd_set_stealth_mode,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Cluely");
+        .expect("error while running Codely");
 }

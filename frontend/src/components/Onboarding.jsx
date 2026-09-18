@@ -72,7 +72,7 @@ export default function Onboarding({ onComplete, onScanRepo, apiBase = "http://1
         <div className="onboarding-progress-header">
           <div className="onboarding-title">
             <Sparkles size={16} color="#00f2fe" />
-            <span>Welcome to Cluely — Setup Wizard</span>
+            <span>Welcome to Codely — Setup Wizard</span>
           </div>
           <div className="step-dots">
             {[1, 2, 3, 4, 5].map(s => (
@@ -180,7 +180,7 @@ export default function Onboarding({ onComplete, onScanRepo, apiBase = "http://1
           <div className="onboarding-step">
             <div className="step-badge">STEP 2 OF 5</div>
             <h3>Index Your Codebase</h3>
-            <p>Cluely builds a 3-level hierarchical AST topology map for instant zero-latency retrieval.</p>
+            <p>Codely builds a 3-level hierarchical AST topology map for instant zero-latency retrieval.</p>
 
             <div className="input-group">
               <label>Local Repository Absolute Path</label>
@@ -232,7 +232,7 @@ export default function Onboarding({ onComplete, onScanRepo, apiBase = "http://1
           <div className="onboarding-step">
             <div className="step-badge">STEP 3 OF 5</div>
             <h3>Two-Way Meeting Audio</h3>
-            <p>Cluely captures both your microphone and meeting speakers so you get answers when teammates ask questions.</p>
+            <p>Codely captures both your microphone and meeting speakers so you get answers when teammates ask questions.</p>
 
             <div className="audio-feature-grid">
               <div className="audio-card">
@@ -269,7 +269,7 @@ export default function Onboarding({ onComplete, onScanRepo, apiBase = "http://1
           <div className="onboarding-step">
             <div className="step-badge">STEP 4 OF 5</div>
             <h3>Instant Global Toggle</h3>
-            <p>During meetings, you can instantly toggle Cluely overlay visibility from anywhere.</p>
+            <p>During meetings, you can instantly toggle Codely overlay visibility from anywhere.</p>
 
             <div className="hotkey-demo-box">
               <div className="key-cap">Ctrl</div>
@@ -299,7 +299,7 @@ export default function Onboarding({ onComplete, onScanRepo, apiBase = "http://1
             <div className="check-ring">
               <Check size={28} color="#00f5a0" />
             </div>
-            <h3>Cluely Is Ready & Standing By</h3>
+            <h3>Codely Is Ready & Standing By</h3>
             <p>Start your meeting or code review. As you or your teammates discuss architecture, context cards will appear automatically.</p>
 
             <div className="step-actions center">

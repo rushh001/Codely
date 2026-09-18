@@ -65,10 +65,12 @@ export default function App() {
   const [copiedIndex, setCopiedIndex] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [positionMode, setPositionMode] = useState('right');
-  const [showOnboarding, setShowOnboarding] = useState(() => localStorage.getItem('cluely_onboarded') !== 'true');
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    return localStorage.getItem('codely_onboarded') !== 'true' && localStorage.getItem('cluely_onboarded') !== 'true';
+  });
   const [detectedRepoToast, setDetectedRepoToast] = useState(null);
   const [stealthMode, setStealthMode] = useState(true);
-  const [theme, setTheme] = useState(() => localStorage.getItem('cluely_theme') || 'dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('codely_theme') || localStorage.getItem('cluely_theme') || 'dark');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -77,7 +79,7 @@ export default function App() {
 
   const handleThemeChange = (newTheme) => {
     setTheme(newTheme);
-    localStorage.setItem('cluely_theme', newTheme);
+    localStorage.setItem('codely_theme', newTheme);
   };
 
   // Repository & Search State
@@ -437,9 +439,9 @@ export default function App() {
     <div className={`hud-container mode-${positionMode} theme-${theme}`} data-theme={theme} style={{ opacity: opacityVal }}>
       {/* Sleek, Modern Non-Slop HUD Navbar */}
       <header className="hud-header">
-        <div className="hud-brand" onClick={() => handleSetPositionMode('right')} title="Cluely HUD">
+        <div className="hud-brand" onClick={() => handleSetPositionMode('right')} title="Codely HUD">
           <span className="brand-dot"></span>
-          <span className="brand-title">CLUELY</span>
+          <span className="brand-title">CODELY</span>
         </div>
 
         {/* Central Non-Slop Indicators (Auto-hidden in MINI mode) */}
@@ -836,7 +838,7 @@ export default function App() {
         <Onboarding
           apiBase={API_BASE}
           onComplete={() => {
-            localStorage.setItem('cluely_onboarded', 'true');
+            localStorage.setItem('codely_onboarded', 'true');
             setShowOnboarding(false);
           }}
           onScanRepo={(path, stats) => {

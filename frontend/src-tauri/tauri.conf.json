@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2.json",
-  "productName": "Cluely",
+  "productName": "Codely",
   "version": "1.0.0",
-  "identifier": "com.cluely.app",
+  "identifier": "com.codely.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Cluely",
+        "title": "Codely",
         "width": 920,
         "height": 880,
         "minWidth": 680,
@@ -35,7 +35,7 @@
       "iconPath": "icons/icon.png",
       "iconAsTemplate": false,
       "menuOnLeftClick": false,
-      "tooltip": "Cluely — Live Codebase Context"
+      "tooltip": "Codely — Live Codebase Context"
     },
     "security": {
       "csp": null

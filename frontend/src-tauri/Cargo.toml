@@ -1,8 +1,8 @@
 [package]
-name = "cluely"
+name = "codely"
 version = "1.0.0"
-description = "Cluely — Live Codebase Context Engine"
-authors = ["Cluely"]
+description = "Codely — Live Codebase Context Engine"
+authors = ["Codely"]
 edition = "2021"
 
 

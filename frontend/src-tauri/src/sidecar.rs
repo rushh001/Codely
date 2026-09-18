@@ -9,8 +9,10 @@ static SIDECAR_CHILD: Mutex<Option<Child>> = Mutex::new(None);
 pub fn start_backend_sidecar(_app: &AppHandle) {
     let mut child_guard = SIDECAR_CHILD.lock().unwrap();
 
-    // Check if bundled cluely-backend.exe exists in current directory or sidecars dir
+    // Check if bundled codely-backend.exe exists in current directory or sidecars dir
     let candidates = [
+        "codely-backend.exe",
+        "../backend/dist/codely-backend.exe",
         "cluely-backend.exe",
         "backend.exe",
         "../backend/dist/cluely-backend.exe",
@@ -18,16 +20,16 @@ pub fn start_backend_sidecar(_app: &AppHandle) {
 
     for candidate in &candidates {
         if std::path::Path::new(candidate).exists() {
-            println!("[Cluely] Launching backend sidecar: {candidate}");
+            println!("[Codely] Launching backend sidecar: {candidate}");
             if let Ok(child) = Command::new(candidate).spawn() {
                 *child_guard = Some(child);
-                println!("[Cluely] Backend sidecar started successfully.");
+                println!("[Codely] Backend sidecar started successfully.");
                 return;
             }
         }
     }
 
-    println!("[Cluely] No local sidecar binary found — running against external dev server on http://127.0.0.1:8000");
+    println!("[Codely] No local sidecar binary found — running against external dev server on http://127.0.0.1:8000");
 }
 
 /// Gracefully kill the sidecar when the application quits.
@@ -35,7 +37,7 @@ pub fn start_backend_sidecar(_app: &AppHandle) {
 pub fn kill_backend_sidecar() {
     let mut child_guard = SIDECAR_CHILD.lock().unwrap();
     if let Some(mut child) = child_guard.take() {
-        println!("[Cluely] Shutting down backend sidecar process...");
+        println!("[Codely] Shutting down backend sidecar process...");
         let _ = child.kill();
     }
 }

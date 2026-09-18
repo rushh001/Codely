@@ -219,7 +219,7 @@ export default function SettingsPanel({
         <div className="modal-header">
           <div className="modal-title">
             <Settings size={18} color="#00f2fe" />
-            <h3>Cluely Engine Preferences</h3>
+            <h3>Codely Engine Preferences</h3>
           </div>
           <button className="icon-btn close" onClick={onClose}>
             <X size={16} />
@@ -462,7 +462,7 @@ export default function SettingsPanel({
                 <div className="stealth-toggle-info">
                   <label>Hide Window from Screen Sharing: <strong>{stealthMode ? "ENABLED" : "DISABLED"}</strong></label>
                   <span className="form-hint">
-                    Cluely remains visible to you, but invisible to Zoom, Teams & Google Meet.
+                    Codely remains visible to you, but invisible to Zoom, Teams & Google Meet.
                   </span>
                 </div>
                 <button 

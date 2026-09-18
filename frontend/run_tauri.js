@@ -4,7 +4,7 @@ import fs from 'fs';
 import { spawn } from 'child_process';
 
 const isCI = Boolean(process.env.CI || process.env.GITHUB_ACTIONS);
-const cargoTargetDir = path.join(os.homedir(), '.cargo', 'cluely-target');
+const cargoTargetDir = path.join(os.homedir(), '.cargo', 'codely-target');
 const cargoBin = path.join(os.homedir(), '.cargo', 'bin');
 
 const env = { 

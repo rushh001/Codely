@@ -96,7 +96,7 @@ def resolve_target_codebase(target: str) -> Path:
             for branch in ["main", "master"]:
                 try:
                     zip_url = f"https://codeload.github.com/{owner}/{repo}/zip/refs/heads/{branch}"
-                    req = urllib.request.Request(zip_url, headers={'User-Agent': 'Cluely-Context-Engine'})
+                    req = urllib.request.Request(zip_url, headers={'User-Agent': 'Codely-Context-Engine'})
                     zip_temp = cache_dir.parent / f"{owner}_{repo}_{branch}.zip"
                     with urllib.request.urlopen(req, timeout=30) as response, open(zip_temp, 'wb') as out_file:
                         shutil.copyfileobj(response, out_file)

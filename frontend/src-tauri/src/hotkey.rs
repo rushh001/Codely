@@ -28,6 +28,6 @@ pub fn register_toggle_hotkey(app: &AppHandle) -> Result<(), Box<dyn std::error:
         }
     })?;
 
-    println!("[Cluely] Global hotkey registered: {shortcut_str}");
+    println!("[Codely] Global hotkey registered: {shortcut_str}");
     Ok(())
 }

@@ -328,7 +328,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cluely"
+name = "codely"
 version = "1.0.0"
 dependencies = [
  "serde",

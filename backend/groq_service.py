@@ -49,8 +49,8 @@ PROVIDER_CATALOG = {
 }
 
 FAST_ANALYZER_MODEL = "openai/gpt-oss-120b"
-PRIMARY_REASONER_MODEL = "openai/gpt-oss-120b"
-FALLBACK_REASONER_MODELS = ["qwen/qwen3.6-27b", "openai/gpt-oss-20b"]
+PRIMARY_REASONER_MODEL = "llama-3.3-70b-versatile"
+FALLBACK_REASONER_MODELS = ["llama-3.1-8b-instant"]
 PRIMARY_STT_MODEL = "whisper-large-v3"
 
 STOP_WORDS = {
@@ -183,10 +183,13 @@ class GroqEngine:
         project_env = dotenv_values(str(env_file)) if env_file.exists() else {}
 
         raw_key = api_key or project_env.get("GROQ_API_KEY", "")
-        self.api_key = raw_key.strip() if raw_key else ""
-        self.gemini_api_key = (project_env.get("GEMINI_API_KEY", "") or "").strip()
-        self.openai_api_key = (project_env.get("OPENAI_API_KEY", "") or "").strip()
-        self.anthropic_api_key = (project_env.get("ANTHROPIC_API_KEY", "") or "").strip()
+        self.api_key = raw_key.strip().split()[0] if raw_key and raw_key.strip() else ""
+        raw_gemini = (project_env.get("GEMINI_API_KEY", "") or "").strip()
+        self.gemini_api_key = raw_gemini.split()[0] if raw_gemini else ""
+        raw_openai = (project_env.get("OPENAI_API_KEY", "") or "").strip()
+        self.openai_api_key = raw_openai.split()[0] if raw_openai else ""
+        raw_anthropic = (project_env.get("ANTHROPIC_API_KEY", "") or "").strip()
+        self.anthropic_api_key = raw_anthropic.split()[0] if raw_anthropic else ""
 
         # Active provider & model (strictly Gemini, OpenAI, or Claude)
         self.active_provider = (project_env.get("ACTIVE_AI_PROVIDER", "") or "gemini").strip().lower()
@@ -290,15 +293,15 @@ class GroqEngine:
             self.client = None
 
     def set_gemini_key(self, gemini_key: str):
-        self.gemini_api_key = gemini_key.strip() if gemini_key else ""
+        self.gemini_api_key = gemini_key.strip().split()[0] if gemini_key and gemini_key.strip() else ""
         os.environ["GEMINI_API_KEY"] = self.gemini_api_key
 
     def set_openai_key(self, openai_key: str):
-        self.openai_api_key = openai_key.strip() if openai_key else ""
+        self.openai_api_key = openai_key.strip().split()[0] if openai_key and openai_key.strip() else ""
         os.environ["OPENAI_API_KEY"] = self.openai_api_key
 
     def set_anthropic_key(self, anthropic_key: str):
-        self.anthropic_api_key = anthropic_key.strip() if anthropic_key else ""
+        self.anthropic_api_key = anthropic_key.strip().split()[0] if anthropic_key and anthropic_key.strip() else ""
         os.environ["ANTHROPIC_API_KEY"] = self.anthropic_api_key
 
     def transcribe_audio_bytes(self, wav_bytes: bytes) -> Dict[str, Any]:
@@ -682,7 +685,7 @@ class GroqEngine:
 
             topo_preview = [{"path": t["module_path"], "summary": t["summary"]} for t in topology[:15]]
 
-            synth_prompt = f"""You are Cluely Live Codebase Context Engine assisting a software engineer in a live technical meeting.
+            synth_prompt = f"""You are Codely Live Codebase Context Engine assisting a software engineer in a live technical meeting.
 
 Spoken Query: "{speech_clean}"
 Focused Subsystems: {focused_modules if focused_modules else 'Whole Repository'}

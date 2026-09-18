@@ -15,7 +15,7 @@ from groq_service import GroqEngine
 from audio_service import DualAudioCaptureService
 from audio_loopback import list_audio_devices
 
-app = FastAPI(title="Cluely Live Codebase Context Engine API", version="1.0.0")
+app = FastAPI(title="Codely Live Codebase Context Engine API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,

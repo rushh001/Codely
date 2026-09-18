@@ -55,8 +55,8 @@ jobs:
         with:
           projectPath: './frontend'
           tagName: v__VERSION__
-          releaseName: 'Cluely v__VERSION__'
-          releaseBody: 'Live Codebase Context Engine Desktop Overlay'
+          releaseName: 'Codely v__VERSION__'
+          releaseBody: 'Codely — Live Codebase Context Engine Desktop Overlay'
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}

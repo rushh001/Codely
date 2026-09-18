@@ -8,13 +8,13 @@ pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
     let show_hide = MenuItem::with_id(app, "toggle", "Show / Hide Overlay", true, None::<&str>)?;
     let scan_repo = MenuItem::with_id(app, "scan", "Scan Repository", true, None::<&str>)?;
     let separator = PredefinedMenuItem::separator(app)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit Cluely", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit Codely", true, None::<&str>)?;
 
     let menu = Menu::with_items(app, &[&show_hide, &scan_repo, &separator, &quit])?;
 
     let _tray = TrayIconBuilder::new()
         .icon(app.default_window_icon().unwrap().clone())
-        .tooltip("Cluely — Live Codebase Context")
+        .tooltip("Codely — Live Codebase Context")
         .menu(&menu)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "toggle" => {
